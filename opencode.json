@@ -3,18 +3,18 @@
   "mcp": {
     "github": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
+      "command": ["cmd", "/c", "npx", "-y", "@modelcontextprotocol/server-github"],
       "environment": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_TOKEN}"
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_PERSONAL_ACCESS_TOKEN}"
       },
       "enabled": true
     },
     "filesystem": {
       "type": "local",
       "command": [
-        "npx", "-y",
+        "cmd", "/c", "npx", "-y",
         "@modelcontextprotocol/server-filesystem",
-        "c:\\Users\\Usuario\\desktop\\Celeste.IA"
+        "D:/Multi_Agente"
       ],
       "enabled": true
     }
