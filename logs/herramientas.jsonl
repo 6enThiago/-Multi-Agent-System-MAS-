@@ -1,0 +1,13 @@
+{"t": "2026-10-18 22:15:57", "agente": "programador", "herramienta": "escribir_archivo", "args": {"ruta": "demo/hola.py", "contenido": "print('hola')"}, "estado": "ok"}
+{"t": "2026-10-18 22:15:57", "agente": "analista", "herramienta": "escribir_archivo", "args": {"ruta": "demo/x.txt", "contenido": "no debería"}, "estado": "denegado"}
+{"t": "2026-10-18 22:15:57", "agente": "analista", "herramienta": "leer_archivo", "args": {"ruta": "demo/hola.py"}, "estado": "ok"}
+{"t": "2026-10-18 22:15:57", "agente": "analista", "herramienta": "leer_archivo", "args": {"ruta": "../../etc/passwd"}, "estado": "error"}
+{"t": "2026-10-18 22:30:21", "agente": "programador", "herramienta": "escribir_archivo", "args": {"ruta": "demo/hola.py", "contenido": "print('hola')"}, "estado": "error"}
+{"t": "2026-10-18 22:30:21", "agente": "analista", "herramienta": "escribir_archivo", "args": {"ruta": "demo/x.txt", "contenido": "no debería"}, "estado": "denegado"}
+{"t": "2026-10-18 22:30:21", "agente": "analista", "herramienta": "leer_archivo", "args": {"ruta": "demo/hola.py"}, "estado": "ok"}
+{"t": "2026-10-18 22:30:21", "agente": "analista", "herramienta": "leer_archivo", "args": {"ruta": "../../etc/passwd"}, "estado": "error"}
+{"t": "2026-10-18 22:31:52", "agente": "programador", "herramienta": "escribir_archivo", "args": {"ruta": "cli/demo.md", "contenido": "hola-cli"}, "estado": "ok"}
+{"t": "2026-10-18 22:31:52", "agente": "programador", "herramienta": "escribir_archivo", "args": {"ruta": "demo/hola.py", "contenido": "print('hola')"}, "estado": "ok"}
+{"t": "2026-10-18 22:31:52", "agente": "analista", "herramienta": "escribir_archivo", "args": {"ruta": "demo/x.txt", "contenido": "no debería"}, "estado": "denegado"}
+{"t": "2026-10-18 22:31:52", "agente": "analista", "herramienta": "leer_archivo", "args": {"ruta": "demo/hola.py"}, "estado": "ok"}
+{"t": "2026-10-18 22:31:52", "agente": "analista", "herramienta": "leer_archivo", "args": {"ruta": "../../etc/passwd"}, "estado": "error"}

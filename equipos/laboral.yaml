@@ -1,0 +1,20 @@
+equipo: laboral
+descripcion: Equipo para programar, analizar y documentar en el trabajo
+orquestador: orquestador
+
+agentes:
+  - nombre: orquestador
+    rol: Interpreta la petición y reparte la tarea
+    herramientas: [leer_archivo]
+
+  - nombre: programador
+    rol: Escribe y corrige código
+    herramientas: [leer_archivo, escribir_archivo]
+
+  - nombre: analista
+    rol: Lee datos y resume resultados (solo lectura)
+    herramientas: [leer_archivo]
+
+  - nombre: documentador
+    rol: Registra avances en AVANCES.md
+    herramientas: [leer_archivo, escribir_archivo]
