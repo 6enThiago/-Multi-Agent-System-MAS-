@@ -4,7 +4,7 @@ Una herramienta de línea de comandos (CLI) y aplicación web que permite config
 
 ---
 
-## 📋 Índice
+## Índice
 
 - [Descripción](#-descripción)
 - [Características](#-características)
@@ -20,7 +20,7 @@ Una herramienta de línea de comandos (CLI) y aplicación web que permite config
 
 ---
 
-## 📖 Descripción
+## Descripción
 
 **Multi-Agent System (MAS)** es un orquestador de agentes de IA que coordina un equipo de agentes especializados, cada uno con un rol definido, para ejecutar flujos de trabajo de forma autónoma y colaborativa.
 
@@ -40,7 +40,7 @@ En lugar de interactuar con un único modelo de lenguaje, defines un **equipo** 
 
 ---
 
-## ✨ Características
+## Características
 
 - **Equipos configurables:** define los agentes, sus roles, prompts y modelos en un archivo de configuración YAML/JSON.
 - **Flujos de trabajo autónomos:** los agentes colaboran en cadena (pipeline) sin intervención manual entre pasos.
@@ -53,7 +53,7 @@ En lugar de interactuar con un único modelo de lenguaje, defines un **equipo** 
 
 ---
 
-## 🏗 Arquitectura
+## Arquitectura
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -95,9 +95,6 @@ En lugar de interactuar con un único modelo de lenguaje, defines un **equipo** 
 | **Interfaz Web** | Panel visual para configurar equipos, lanzar tareas y ver el progreso. |
 | **Almacenamiento** | Guarda configuraciones de equipos, historial de ejecuciones y resultados. |
 
----
-
-## 🤖 Agentes incluidos
 
 | Rol | Nombre | Función |
 |---|---|---|
@@ -109,7 +106,6 @@ En lugar de interactuar con un único modelo de lenguaje, defines un **equipo** 
 
 > Todos los agentes son personalizables: puedes cambiar sus prompts, asignarles otro modelo o crear agentes nuevos.
 
----
 
 ## ⚙️ Requisitos previos
 
@@ -117,8 +113,6 @@ En lugar de interactuar con un único modelo de lenguaje, defines un **equipo** 
 - **pip** (gestor de paquetes)
 - Una **clave de API** de al menos un proveedor de modelos (OpenAI, Anthropic, etc.) o un servidor local como **Ollama**
 - *(Opcional)* **Node.js** ≥ 18 para el servidor web
-
----
 
 ## 📦 Instalación
 
@@ -133,6 +127,7 @@ python -m venv .venv
 # Activarlo
 # Windows
 .venv\Scripts\activate
+
 # macOS / Linux
 source .venv/bin/activate
 
@@ -141,9 +136,10 @@ pip install -r requirements.txt
 
 # 4. Configurar variables de entorno
 copy .env.example .env     # Windows
+
 cp .env.example .env       # macOS / Linux
+
 # Editar .env con tus claves de API
-```
 
 ---
 
@@ -211,11 +207,9 @@ output:
   path: ./outputs/
 ```
 
----
+## Uso
 
-## 🚀 Uso
-
-### Modo CLI
+- Modo CLI
 
 ```bash
 # Listar equipos configurados
@@ -234,7 +228,7 @@ mas agent run researcher --task "Busca las últimas tendencias de LLMs"
 mas history
 ```
 
-### Modo Web
+- Modo Web
 
 ```bash
 # Iniciar el servidor web
@@ -252,7 +246,7 @@ Luego abre **http://localhost:8000** en tu navegador:
 
 ---
 
-## 📁 Estructura del proyecto
+## Estructura del proyecto
 
 ```
 Multi-agent-System-MAS/
@@ -285,7 +279,7 @@ Multi-agent-System-MAS/
 
 ---
 
-## 🗺 Roadmap
+## Roadmap
 
 - [x] Definición de arquitectura y diseño del sistema
 - [ ] Núcleo del orquestador con flujo secuencial
@@ -301,7 +295,7 @@ Multi-agent-System-MAS/
 
 ---
 
-## 🤝 Contribuir
+## Contribuir
 
 Las contribuciones son bienvenidas. Para empezar:
 
@@ -312,6 +306,6 @@ Las contribuciones son bienvenidas. Para empezar:
 
 ---
 
-## 📄 Licencia
+## Licencia
 
 Este proyecto se distribuye bajo la licencia **MIT**. Consulta el archivo [LICENSE](LICENSE) para más detalles.
