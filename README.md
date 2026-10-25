@@ -1,311 +1,291 @@
-# Multi-Agent System (MAS)
+# MAS — Asistente de archivos en segundo plano
 
-Una herramienta de línea de comandos (CLI) y aplicación web que permite configurar equipos de agentes de IA especializados —por ejemplo, un investigador, un redactor y un corrector— para que colaboren autónomamente en la investigación y redacción de informes, o en la gestión de proyectos y tareas.
+> **Estado del proyecto:** en desarrollo temprano. El núcleo (orquestador, permisos, confirmación humana y auditoría) ya existe y tiene pruebas. La interfaz de chat, el modo segundo plano, el proveedor de IA real y el ejecutable `.exe` **todavía no están implementados**. Consulta [`MEJORAS.md`](MEJORAS.md) para ver el plan detallado.
 
 ---
 
 ## Índice
 
-- [Descripción](#-descripción)
-- [Características](#-características)
-- [Arquitectura](#-arquitectura)
-- [Agentes incluidos](#-agentes-incluidos)
-- [Requisitos previos](#-requisitos-previos)
-- [Instalación](#-instalación)
-- [Configuración](#-configuración)
-- [Uso](#-uso)
-- [Estructura del proyecto](#-estructura-del-proyecto)
-- [Roadmap](#-roadmap)
-- [Licencia](#-licencia)
+1. [Qué es MAS](#qué-es-mas)
+2. [Para quién es](#para-quién-es)
+3. [Qué hace](#qué-hace)
+4. [Principios de diseño](#principios-de-diseño)
+5. [Cómo funciona](#cómo-funciona)
+6. [Seguridad y control del usuario](#seguridad-y-control-del-usuario)
+7. [Distribución como ejecutable](#distribución-como-ejecutable)
+8. [Estado actual](#estado-actual)
+9. [Instalación para desarrollo](#instalación-para-desarrollo)
+10. [Configuración de equipos (YAML)](#configuración-de-equipos-yaml)
+11. [Estructura del proyecto](#estructura-del-proyecto)
+12. [Pruebas](#pruebas)
+13. [Contribuir](#contribuir)
+14. [Licencia](#licencia)
 
 ---
 
-## Descripción
+## Qué es MAS
 
-**Multi-Agent System (MAS)** es un orquestador de agentes de IA que coordina un equipo de agentes especializados, cada uno con un rol definido, para ejecutar flujos de trabajo de forma autónoma y colaborativa.
+**MAS (Multi-Agent System)** es una herramienta de escritorio que trabaja **en segundo plano** mientras tú haces otra cosa. Su trabajo es mantener tus archivos ordenados, crear documentos cuando se lo pides y borrar lo que ya no necesitas, siempre **con tu confirmación y mostrándote la ruta exacta** de lo que va a tocar.
 
-En lugar de interactuar con un único modelo de lenguaje, defines un **equipo** de agentes con roles complementarios. El sistema se encarga de:
+Se usa desde una ventana de chat sencilla (un cuadro de texto donde escribes lo que necesitas) y se distribuye como **un único ejecutable** (`.exe` en Windows, binario en macOS/Linux) generado con PyInstaller u otro empaquetador, para que cualquier persona pueda usarlo sin instalar Python.
 
-1. Recibir una tarea o objetivo del usuario.
-2. Descomponerla en subtareas.
-3. Asignar cada subtarea al agente adecuado.
-4. Encadenar las salidas de un agente como entrada del siguiente.
-5. Devolver un resultado final consolidado (informe, documento, plan de proyecto, etc.).
-
-### Casos de uso
-
-- **Redacción de informes:** un investigador recopila información, un redactor elabora el borrador y un corrector lo revisa y pule.
-- **Gestión de proyectos:** un analista descompone el proyecto, un planificador organiza tareas y plazos, y un revisor valida el plan.
-- **Investigación:** un agente de búsqueda recoge datos, un sintetizador los resume y un verificador contrasta fuentes.
+Por debajo, un equipo de agentes especializados (orquestador, programador, analista, documentador…) se reparte el trabajo. El usuario no necesita saberlo: solo escribe qué quiere.
 
 ---
 
-## Características
+## Para quién es
 
-- **Equipos configurables:** define los agentes, sus roles, prompts y modelos en un archivo de configuración YAML/JSON.
-- **Flujos de trabajo autónomos:** los agentes colaboran en cadena (pipeline) sin intervención manual entre pasos.
-- **Múltiples orígenes de modelos:** compatible con OpenAI, Anthropic Claude, modelos locales (Ollama) y otros proveedores.
-- **Modo CLI:** ejecuta equipos desde la terminal con un único comando.
-- **Modo Web:** interfaz visual para configurar equipos, lanzar tareas y seguir el progreso en tiempo real.
-- **Plantillas predefinidas:** equipos listos para usar (investigación + redacción, gestión de tareas, etc.).
-- **Historial y trazabilidad:** registro de cada paso, salidas intermedias y coste estimado de cada ejecución.
-- **Extensible:** añade nuevos agentes y roles sin modificar el núcleo del sistema.
-
----
-
-## Arquitectura
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Interfaz (CLI / Web)                │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│                     Orquestador (Orchestrator)          │
-│  · Recibe la tarea                                      │
-│  · Lee la configuración del equipo                      │
-│  · Secuencia y coordina a los agentes                   │
-│  · Gestiona el estado y los errores                     │
-└───────┬─────────────────┬─────────────────┬─────────────┘
-        │                 │                 │
-        ▼                 ▼                 ▼
-┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-│  Investigador │  │   Redactor   │  │  Corrector   │
-│  (Researcher) │─▶│   (Writer)   │─▶│  (Reviewer)  │
-└──────────────┘  └──────────────┘  └──────────────┘
-        │                 │                 │
-        └─────────────────┴─────────────────┘
-                          │
-                          ▼
-              ┌───────────────────────┐
-              │  Resultado final      │
-              │  (informe / plan /…)  │
-              └───────────────────────┘
-```
-
-**Componentes principales:**
-
-| Componente | Responsabilidad |
+| Ámbito | Ejemplos de uso |
 |---|---|
-| **Orquestador** | Recibe la tarea, aplica la configuración del equipo y coordina la ejecución en cadena de los agentes. |
-| **Agente** | Unidad autónoma con un rol, un prompt de sistema, un modelo asociado y una herramienta opcional (búsqueda, lectura de archivos, etc.). |
-| **Memoria / Contexto** | Mantiene el historial compartido entre agentes durante la ejecución. |
-| **Interfaz CLI** | Punto de entrada de terminal (`mas run`, `mas team list`, etc.). |
-| **Interfaz Web** | Panel visual para configurar equipos, lanzar tareas y ver el progreso. |
-| **Almacenamiento** | Guarda configuraciones de equipos, historial de ejecuciones y resultados. |
+| **Entorno de trabajo** | Ordenar la carpeta de Descargas por tipo o proyecto, archivar informes antiguos, crear plantillas de actas o notas de reunión, limpiar duplicados y temporales. |
+| **Vida cotidiana** | Organizar fotos y documentos personales, crear una lista de compras o un presupuesto en un archivo, borrar instaladores y capturas viejas, mantener el escritorio limpio. |
 
+El público objetivo es **no técnico**: la interfaz debe ser un chat claro, con mensajes de confirmación comprensibles.
 
-| Rol | Nombre | Función |
-|---|---|---|
-| 🔍 **Investigador** | `researcher` | Busca, recopila y verifica información relevante para la tarea. |
-| ✍️ **Redactor** | `writer` | Convierte la investigación en un documento estructurado y coherente. |
-| ✅ **Corrector** | `reviewer` | Revisa, corrige estilo y gramática, y valida que el resultado cumpla los objetivos. |
-| 📊 **Analista** | `analyst` | Descompone proyectos en tareas y dependencias *(modo gestión de proyectos)*. |
-| 📅 **Planificador** | `planner` | Organiza tareas en un plan con plazos y prioridades *(modo gestión de proyectos)*. |
+---
 
-> Todos los agentes son personalizables: puedes cambiar sus prompts, asignarles otro modelo o crear agentes nuevos.
+## Qué hace
 
+### 1. Acomoda archivos
+- Clasifica y mueve archivos por tipo, fecha o proyecto dentro de carpetas que **tú autorizas**.
+- Siempre muestra primero un **plan previo** (qué se moverá y adónde) y espera tu aprobación.
+- Permite **deshacer** el último reordenamiento.
 
-## ⚙️ Requisitos previos
+### 2. Crea archivos bajo petición
+- Escribes en el chat: *«Crea una nota de reunión para el lunes»* y el sistema genera el archivo.
+- Antes de guardar, muestra la ruta de destino y una vista previa.
 
-- **Python** ≥ 3.10
-- **pip** (gestor de paquetes)
-- Una **clave de API** de al menos un proveedor de modelos (OpenAI, Anthropic, etc.) o un servidor local como **Ollama**
-- *(Opcional)* **Node.js** ≥ 18 para el servidor web
+### 3. Borra archivos rápido y con confirmación
+- Escribes: *«Borra los instaladores de Descargas»*.
+- MAS lista los archivos candidatos con su **ruta completa** y su tamaño.
+- Nada se borra sin tu confirmación explícita.
+- Por defecto envía los archivos a la **papelera de reciclaje**, no los elimina de forma permanente.
 
-## 📦 Instalación
+### 4. Trabaja en segundo plano
+- Vive en la **bandeja del sistema** (icono junto al reloj).
+- Puede vigilar carpetas y **proponer** acciones (por ejemplo, «hay 14 capturas nuevas, ¿las ordeno?») sin interrumpir lo que haces.
+- Las notificaciones piden permiso; **nunca actúa por su cuenta sobre archivos**.
+
+---
+
+## Principios de diseño
+
+Estos principios ya están presentes en el código y guían cada decisión nueva:
+
+1. **Un agente, una responsabilidad.** Cada agente hace una cosa bien y no habla con otros directamente.
+2. **Orquestador al centro.** Toda coordinación pasa por el orquestador.
+3. **Contexto mínimo.** Cada agente recibe solo lo imprescindible (menos coste y menos errores).
+4. **Salidas estandarizadas.** Todo resultado tiene la misma forma: `estado`, `resultado`, `errores`.
+5. **Todo verificable.** Un proveedor falso permite probar el sistema completo sin red ni coste.
+6. **Humano en el control.** Ninguna acción que modifique el sistema se ejecuta sin previsualización y autorización.
+7. **Regla de oro de las herramientas.** Toda herramienta se escribe primero con `confirmar=False` (previsualiza) y solo actúa con `confirmar=True` tras la autorización. El decorador `@herramienta` lo exige mecánicamente.
+
+---
+
+## Cómo funciona
+
+```text
+┌──────────────────────────────────────────────────────────┐
+│  Interfaz: ventana de chat + icono en bandeja del sistema │
+└────────────────────────────┬─────────────────────────────┘
+                             │ petición del usuario
+                             ▼
+┌──────────────────────────────────────────────────────────┐
+│  Orquestador: interpreta, reparte, reintenta, reporta     │
+└──────┬─────────────────┬──────────────────┬──────────────┘
+       ▼                 ▼                  ▼
+  Agente(s)         Agente(s)          Agente(s)
+       │                 │                  │
+       └────── piden herramientas ──────────┘
+                             ▼
+┌──────────────────────────────────────────────────────────┐
+│  Entorno (única puerta al sistema de archivos)            │
+│  permisos → previsualización → CONFIRMACIÓN → ejecución   │
+│  → auditoría                                              │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Flujo de una acción que modifica archivos:**
+
+1. El usuario escribe una petición en el chat.
+2. El orquestador la asigna al agente adecuado.
+3. El agente propone una herramienta (por ejemplo, `borrar_archivo`).
+4. El `Entorno` comprueba que el agente tiene permiso en el YAML del equipo.
+5. Se genera una **previsualización** con la ruta exacta.
+6. El usuario confirma o rechaza en la interfaz.
+7. Solo si confirma, la herramienta se ejecuta de verdad.
+8. Queda registrada en el log de auditoría.
+
+Los estados posibles de cualquier acción son: `ok`, `rechazado` (el humano dijo no), `denegado` (el agente no tiene permiso) y `error`.
+
+---
+
+## Seguridad y control del usuario
+
+- **Carpetas autorizadas:** MAS solo opera dentro de las carpetas que el usuario concede explícitamente. Cualquier ruta fuera se bloquea (protección contra `../`, rutas absolutas y enlaces simbólicos).
+- **Carpetas protegidas:** las carpetas del sistema (Windows, Archivos de programa, `/etc`, etc.) nunca se pueden tocar, aunque el usuario las autorice por error.
+- **Confirmación siempre visible:** la ruta completa y la acción aparecen en el diálogo de confirmación.
+- **Papelera por defecto:** el borrado es recuperable.
+- **Seguro por defecto:** si no hay interfaz de confirmación disponible, la acción se rechaza.
+- **Auditoría:** cada ejecución se registra en `logs/herramientas.jsonl` (fecha, agente, herramienta, estado).
+- **Sin envío de archivos a terceros sin aviso:** si se usa un modelo en la nube, el usuario debe saber qué información se envía. Se ofrecerá también modo local (Ollama).
+- **Claves de API fuera del ejecutable:** nunca se incrustan en el `.exe`; se guardan en el almacén seguro del sistema.
+
+---
+
+## Distribución como ejecutable
+
+El objetivo es entregar **un solo archivo** que el usuario ejecute con doble clic.
+
+```bash
+pip install pyinstaller
+pyinstaller --onefile --windowed --name MAS --add-data "equipos;equipos" mas/__main__.py
+```
+
+> En macOS/Linux el separador de `--add-data` es `:` en lugar de `;`.
+
+Puntos que hay que resolver antes de empaquetar (detalle en [`MEJORAS.md`](MEJORAS.md)):
+
+- Las rutas basadas en `__file__` (`RAIZ`, `ESPACIO`) **no funcionan igual dentro de un ejecutable**. Hay que usar rutas por usuario (`%APPDATA%`, `~/.config`) y `sys._MEIPASS` solo para recursos incluidos.
+- Los YAML de equipos y cualquier recurso deben incluirse con `--add-data`.
+- La interfaz gráfica debe sustituir a `input()` para las confirmaciones.
+- Firmar el ejecutable (Windows) para reducir avisos de antivirus y SmartScreen.
+
+---
+
+## Estado actual
+
+| Capacidad | Estado |
+|---|---|
+| Orquestador secuencial con reintentos | ✅ Implementado y probado |
+| Contrato de salida estandarizado | ✅ Implementado y probado |
+| Permisos por agente en YAML | ✅ Implementado y probado |
+| Previsualización + confirmación + auditoría | ✅ Implementado y probado (confirmación solo por consola) |
+| Bloqueo de rutas fuera del área de trabajo | ✅ Implementado y probado |
+| Herramientas `leer_archivo` y `escribir_archivo` | ✅ Implementadas |
+| Proveedor falso para pruebas | ✅ Implementado |
+| Agentes que **eligen y usan** herramientas por sí mismos | ❌ Pendiente (prioridad máxima) |
+| Proveedor de IA real (Anthropic / OpenAI / Ollama) | ❌ Pendiente |
+| Herramientas `borrar_archivo`, `mover_archivo`, `crear_carpeta` | ❌ Pendiente |
+| Ventana de chat | ❌ Pendiente |
+| Ejecución en segundo plano / bandeja del sistema | ❌ Pendiente |
+| Vigilancia de carpetas | ❌ Pendiente |
+| Empaquetado `.exe` | ❌ Pendiente |
+
+---
+
+## Instalación para desarrollo
+
+**Requisitos:** Python ≥ 3.10.
 
 ```bash
 # 1. Clonar el repositorio
 git clone https://github.com/<tu-usuario>/Multi-agent-System-MAS.git
 cd Multi-agent-System-MAS
 
-# 2. Crear un entorno virtual
+# 2. Crear y activar un entorno virtual
 python -m venv .venv
 
-# Activarlo
 # Windows
 .venv\Scripts\activate
-
 # macOS / Linux
 source .venv/bin/activate
 
 # 3. Instalar dependencias
 pip install -r requirements.txt
+```
 
-# 4. Configurar variables de entorno
-copy .env.example .env     # Windows
+Uso actual desde terminal:
 
-cp .env.example .env       # macOS / Linux
+```bash
+# Cadena de demostración con proveedor falso
+python -m mas run --task "Informe de prueba"
 
-# Editar .env con tus claves de API
+# Ejecutar una herramienta como un agente (con confirmación por consola)
+python -m mas tool --agent programador --tool escribir_archivo \
+    --arg ruta=notas/hola.md --arg contenido="Hola"
+```
 
 ---
 
-## 🔧 Configuración
+## Configuración de equipos (YAML)
 
-### Variables de entorno (`.env`)
-
-```env
-# Proveedor por defecto
-MAS_PROVIDER=openai
-
-# Claves de API (solo se necesita la del proveedor que uses)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-
-# Modelo por defecto
-MAS_MODEL=gpt-4o
-
-# Modo de ejecución: sequential (cadena) | parallel (paralelo)
-MAS_MODE=sequential
-```
-
-### Definición de un equipo (`teams/informe.yaml`)
+Los equipos viven en `equipos/*.yaml`. Esquema actual:
 
 ```yaml
-name: Equipo de Informes
-description: Investiga, redacta y revisa informes automáticamente
+equipo: laboral
+descripcion: Equipo para programar, analizar y documentar en el trabajo
+orquestador: orquestador
 
-agents:
-  - id: researcher
-    role: Investigador
-    model: gpt-4o
-    system_prompt: >
-      Eres un investigador riguroso. Recopila datos fiables,
-      cita tus fuentes y entrega un resumen estructurado con
-      hallazgos clave.
+agentes:
+  - nombre: orquestador
+    rol: Interpreta la petición y reparte la tarea
+    herramientas: [leer_archivo]
 
-  - id: writer
-    role: Redactor
-    model: gpt-4o
-    system_prompt: >
-      Eres un redactor profesional. Convierte la investigación
-      recibida en un informe claro, bien estructurado y con
-      introducción, desarrollo y conclusión.
+  - nombre: programador
+    rol: Escribe y corrige código
+    herramientas: [leer_archivo, escribir_archivo]
 
-  - id: reviewer
-    role: Corrector
-    model: gpt-4o
-    system_prompt: >
-      Eres un corrector experto. Revisa ortografía, estilo,
-      coherencia y rigor. Devuelve el texto corregido y una
-      lista de mejoras aplicadas.
-
-workflow:
-  type: sequential          # sequential | parallel
-  steps:
-    - agent: researcher
-    - agent: writer
-      depends_on: [researcher]
-    - agent: reviewer
-      depends_on: [writer]
-
-output:
-  format: markdown
-  path: ./outputs/
+  - nombre: analista
+    rol: Lee datos y resume resultados (solo lectura)
+    herramientas: [leer_archivo]
 ```
 
-## Uso
+Una herramienta que no aparece en la lista de un agente queda **denegada** para ese agente.
 
-- Modo CLI
-
-```bash
-# Listar equipos configurados
-mas team list
-
-# Ejecutar un equipo con una tarea
-mas run --team informe --task "Informe sobre el impacto de la IA en la educación"
-
-# Ejecutar con un equipo predefinido
-mas run --template research-writing --task "Análisis del mercado de software en 2026"
-
-# Ejecutar un solo agente
-mas agent run researcher --task "Busca las últimas tendencias de LLMs"
-
-# Ver el historial de ejecuciones
-mas history
-```
-
-- Modo Web
-
-```bash
-# Iniciar el servidor web
-mas serve --port 8000
-# o
-python -m mas.web
-```
-
-Luego abre **http://localhost:8000** en tu navegador:
-
-1. **Equipos:** crea o edita equipos de agentes desde una interfaz visual.
-2. **Ejecutar:** introduce la tarea, selecciona el equipo y lanza la ejecución.
-3. **Progreso:** sigue en tiempo real cada paso, la salida de cada agente y el resultado final.
-4. **Historial:** consulta ejecuciones anteriores y descarga los resultados.
+El esquema evolucionará para incluir `prompt_sistema` y `proveedor`/`modelo` por agente (ver `MEJORAS.md`).
 
 ---
 
 ## Estructura del proyecto
 
-```
+```text
 Multi-agent-System-MAS/
 ├── README.md
+├── MEJORAS.md
 ├── requirements.txt
-├── .env.example
 ├── pyproject.toml
-├── mas/                        # Paquete principal
+├── mas/
 │   ├── __init__.py
-│   ├── cli.py                  # Punto de entrada CLI (Click/Typer)
-│   ├── orchestrator.py         # Orquestador de agentes
-│   ├── agent.py                # Definición y ejecución de agentes
-│   ├── providers/              # Adaptadores de modelos
-│   │   ├── openai.py
-│   │   ├── anthropic.py
-│   │   └── ollama.py
-│   ├── teams/                  # Carga de configuración de equipos
-│   │   └── loader.py
-│   ├── storage/                # Historial y resultados
-│   └── web/                    # Aplicación web (FastAPI + frontend)
-│       ├── app.py
-│       └── static/
-├── equipos/                    # Configuraciones de equipos (YAML)
+│   ├── __main__.py          # python -m mas
+│   ├── cli.py               # Interfaz de línea de comandos
+│   ├── agent.py             # Agente (una responsabilidad)
+│   ├── orchestrator.py      # Orquestador en cadena con reintentos
+│   ├── result.py            # Contrato de salida estandarizado
+│   ├── entorno.py           # Permisos, confirmación y auditoría
+│   ├── tools.py             # Registro y decorador @herramienta
+│   ├── herramientas.py      # Herramientas de archivos
+│   ├── providers/
+│   │   ├── __init__.py      # Protocolo Proveedor
+│   │   └── fake.py          # Proveedor falso para pruebas
+│   └── teams/
+│       └── loader.py        # Carga y validación de equipos YAML
+├── equipos/
 │   ├── laboral.yaml
 │   └── demo.yaml
-├── outputs/                    # Resultados generados
-├── tests/                      # Pruebas
-└── docs/                       # Documentación adicional
+├── tests/
+└── logs/                    # Auditoría (se genera en ejecución)
 ```
 
 ---
 
-## Roadmap
+## Pruebas
 
-- [x] Definición de arquitectura y diseño del sistema
-- [ ] Núcleo del orquestador con flujo secuencial
-- [ ] Proveedores de modelos (OpenAI, Anthropic, Ollama)
-- [ ] CLI básica (`mas run`, `mas team list`)
-- [ ] Plantillas de equipos predefinidas
-- [ ] Modo paralelo de ejecución de agentes
-- [ ] Interfaz web con progreso en tiempo real
-- [ ] Herramientas externas para agentes (búsqueda web, lectura de archivos)
-- [ ] Modo gestión de proyectos (analista + planificador)
-- [ ] Exportación de resultados a PDF / DOCX
-- [ ] Sistema de plugins para agentes personalizados
+```bash
+python -m unittest discover -s tests -v
+```
 
 ---
 
 ## Contribuir
 
-Las contribuciones son bienvenidas. Para empezar:
-
 1. Haz un *fork* del repositorio.
-2. Crea una rama: `git checkout -b feature/nueva-funcionalidad`
-3. Realiza tus cambios y añade pruebas.
-4. Envía un *pull request* describiendo los cambios.
+2. Crea una rama: `git checkout -b feature/nueva-funcionalidad`.
+3. Toda herramienta nueva debe seguir la **regla de oro** (`confirmar=False` por defecto) y llevar pruebas.
+4. Ejecuta las pruebas antes de enviar el *pull request*.
 
 ---
 
 ## Licencia
 
-Este proyecto se distribuye bajo la licencia **MIT**. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+Pendiente de definir. Añade un archivo `LICENSE` antes de publicar (por ejemplo MIT) y actualiza esta sección.
