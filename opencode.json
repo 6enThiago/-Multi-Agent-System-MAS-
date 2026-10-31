@@ -5,7 +5,7 @@
       "type": "local",
       "command": ["cmd", "/c", "npx", "-y", "@modelcontextprotocol/server-github"],
       "environment": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "{env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "{env:##}"
       },
       "enabled": true
     },
@@ -13,8 +13,8 @@
       "type": "local",
       "command": [
         "cmd", "/c", "npx", "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "D:/Multi_Agente"
+        "@##",
+        "##"
       ],
       "enabled": true
     }
