@@ -8,7 +8,7 @@ class TestResultadoAgente(unittest.TestCase):
     def test_ok_sigue_el_contrato(self):
         r = ResultadoAgente.ok("  hola  ")
         self.assertEqual(r.estado, Estado.OK)
-        self.assertEqual(r.resultado, "hola")  # el texto se recorta
+        self.assertEqual(r.resultado, "  hola  ")  # el texto se devuelve tal cual, sin recortar
         self.assertEqual(r.errores, ())
         self.assertTrue(r.es_ok)
 

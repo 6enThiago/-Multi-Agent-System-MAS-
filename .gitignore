@@ -218,3 +218,21 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- MAS: archivos locales y de ejemplo (no subirse al repositorio) ---
+# Área de trabajo de pruebas / demos
+espacio_trabajo/
+# Logs generados en ejecución
+logs/
+# Notas internas de demo
+notas/
+# Configuración local de OpenCode / MCP (rutas personales y tokens)
+.mcp.json
+opencode.json
+# Datos de usuario del ejecutable (config, logs, historial de deshacer)
+.mas/
+MAS/
+# Ejecutable empaquetado
+*.exe
+dist/
+build/

@@ -2,27 +2,39 @@
 
 Principios: "Orquestador al centro" y "Contexto mínimo".
 Los agentes no se hablan entre sí: el orquestador ejecuta la cadena y
-les pasa únicamente la salida del paso anterior. Si un paso falla tras
-reintentarlo, la cadena se detiene y se reporta.
+les pasa únicamente la salida del paso anterior.
+
+Cuando un paso devuelve ``RECHAZADO`` o ``DENEGADO``, ese estado se
+propaga tal cual en el ``Informe`` (no se convierte en un error
+genérico): el usuario o el agente siguiente pueden decidir qué hacer.
+Solo un ``ERROR`` de verdad detiene la cadena.
 """
 from __future__ import annotations
 
 from .agent import Agente
 from .result import Estado, ResultadoAgente
 
+# Estados que, aunque no sean "ok", no se consideran fallos irrecuperables
+# que deban detener la cadena con un ERROR genérico.
+ESTADOS_NO_ERROR = {Estado.OK, Estado.RECHAZADO, Estado.DENEGADO}
+
 
 class PasoEjecutado:
     """Traza de un paso: qué agente corrió, con cuántos intentos y qué salió."""
 
-    __slots__ = ("agente_id", "intentos", "resultado")
+    __slots__ = ("agente_id", "intentos_usados", "resultado")
 
-    def __init__(self, agente_id: str, intentos: int, resultado: ResultadoAgente) -> None:
+    def __init__(self, agente_id: str, intentos_usados: int, resultado: ResultadoAgente) -> None:
         self.agente_id = agente_id
-        self.intentos = intentos
+        self.intentos_usados = intentos_usados
         self.resultado = resultado
 
     def a_dict(self) -> dict:
-        return {"agente": self.agente_id, "intentos": self.intentos, **self.resultado.a_dict()}
+        return {
+            "agente": self.agente_id,
+            "intentos": self.intentos_usados,
+            **self.resultado.a_dict(),
+        }
 
 
 class Informe:
@@ -59,16 +71,20 @@ class Informe:
 class Orquestador:
     """Secuencia los agentes en cadena con reintentos limitados."""
 
-    def __init__(self, reintentos: int = 1) -> None:
-        if reintentos < 0:
-            raise ValueError("reintentos no puede ser negativo")
-        self.reintentos = reintentos
+    def __init__(self, reintentos_maximos: int = 1) -> None:
+        if reintentos_maximos < 0:
+            raise ValueError("reintentos_maximos no puede ser negativo")
+        self.reintentos_maximos = reintentos_maximos
 
     def ejecutar(self, tarea: str, agentes: list[Agente]) -> Informe:
         """Ejecuta la cadena completa para una tarea.
 
         Devuelve siempre un `Informe` estandarizado; nunca lanza por
         fallos de agentes (solo por uso incorrecto de la API).
+
+        Reintentos: el primer intento cuenta como 1; si el resultado no
+        es ok se reintenta hasta llegar a ``1 + reintentos_maximos``
+        intentos totales.
         """
         if not agentes:
             return Informe(
@@ -83,14 +99,17 @@ class Orquestador:
 
         for agente in agentes:
             resultado = agente.ejecutar(tarea, contexto)
-            intentos = 1
-            while not resultado.es_ok and intentos <= self.reintentos:
-                intentos += 1
+            intentos_usados = 1
+            while (
+                resultado.estado not in ESTADOS_NO_ERROR
+                and intentos_usados <= self.reintentos_maximos
+            ):
+                intentos_usados += 1
                 resultado = agente.ejecutar(tarea, contexto)
-            pasos.append(PasoEjecutado(agente.id, intentos, resultado))
+            pasos.append(PasoEjecutado(agente.id, intentos_usados, resultado))
 
-            if not resultado.es_ok:
-                # Cadena detenida: no se continúa si un paso crítico falló.
+            if resultado.estado not in ESTADOS_NO_ERROR:
+                # Cadena detenida: un ERROR de verdad no se continúa.
                 return Informe(
                     Estado.ERROR,
                     "",
@@ -100,4 +119,6 @@ class Orquestador:
 
             contexto = resultado.resultado  # el siguiente agente recibe solo esto
 
-        return Informe(Estado.OK, pasos[-1].resultado.resultado, (), tuple(pasos))
+        # El estado final es el del último paso (puede ser ok / rechazado / denegado).
+        ultimo = pasos[-1]
+        return Informe(ultimo.resultado.estado, ultimo.resultado.resultado, ultimo.resultado.errores, tuple(pasos))

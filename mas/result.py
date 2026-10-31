@@ -33,8 +33,8 @@ class ResultadoAgente:
 
     @classmethod
     def ok(cls, resultado: str) -> "ResultadoAgente":
-        """Crea un resultado exitoso (el texto se recorta)."""
-        return cls(Estado.OK, resultado.strip())
+        """Crea un resultado exitoso (el texto se devuelve tal cual, sin alterarlo)."""
+        return cls(Estado.OK, resultado)
 
     @classmethod
     def fallido(cls, *errores: str) -> "ResultadoAgente":

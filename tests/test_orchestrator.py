@@ -3,6 +3,7 @@ import unittest
 
 from mas.agent import Agente
 from mas.orchestrator import Orquestador
+from mas.providers import RespuestaModelo
 from mas.providers.fake import ProveedorFalso
 from mas.result import Estado
 
@@ -14,11 +15,11 @@ class ProveedorContador:
         self.fallos = fallos
         self.llamadas = 0
 
-    def completar(self, entrada: str, *, sistema: str) -> str:
+    def completar(self, entrada: str, *, sistema: str) -> RespuestaModelo:
         self.llamadas += 1
         if self.llamadas <= self.fallos:
             raise RuntimeError("fallo simulado")
-        return f"salida-de-{sistema}"
+        return RespuestaModelo(texto=f"salida-de-{sistema}")
 
 
 class TestOrquestador(unittest.TestCase):
@@ -34,7 +35,7 @@ class TestOrquestador(unittest.TestCase):
         self.assertEqual(informe.estado, Estado.OK)
         self.assertEqual(informe.resultado, "informe")  # manda el último paso
         self.assertEqual(len(informe.pasos), 2)
-        self.assertTrue(all(p.intentos == 1 for p in informe.pasos))
+        self.assertTrue(all(p.intentos_usados == 1 for p in informe.pasos))
         # Contexto mínimo: el 2º agente solo ve la salida del 1º, no más.
         _sistema, entrada_del_2 = p2.llamadas[0]
         self.assertIn("investigación", entrada_del_2)
@@ -57,20 +58,20 @@ class TestOrquestador(unittest.TestCase):
         proveedor = ProveedorContador(fallos=1)
         equipo = [Agente("a", "A", "s", proveedor)]
 
-        informe = Orquestador(reintentos=1).ejecutar("t", equipo)
+        informe = Orquestador(reintentos_maximos=1).ejecutar("t", equipo)
 
         self.assertEqual(informe.estado, Estado.OK)
-        self.assertEqual(informe.pasos[0].intentos, 2)
+        self.assertEqual(informe.pasos[0].intentos_usados, 2)
         self.assertEqual(proveedor.llamadas, 2)
 
     def test_reintentos_agotados_reportan_error(self):
         proveedor = ProveedorContador(fallos=99)
         equipo = [Agente("a", "A", "s", proveedor)]
 
-        informe = Orquestador(reintentos=1).ejecutar("t", equipo)
+        informe = Orquestador(reintentos_maximos=1).ejecutar("t", equipo)
 
         self.assertEqual(informe.estado, Estado.ERROR)
-        self.assertEqual(informe.pasos[0].intentos, 2)  # 1 intento + 1 reintento
+        self.assertEqual(informe.pasos[0].intentos_usados, 2)  # 1 intento + 1 reintento
 
     def test_equipo_vacio_es_error_estandarizado(self):
         informe = Orquestador().ejecutar("t", [])
@@ -88,7 +89,7 @@ class TestOrquestador(unittest.TestCase):
 
     def test_reintentos_negativos_se_rechazan(self):
         with self.assertRaises(ValueError):
-            Orquestador(reintentos=-1)
+            Orquestador(reintentos_maximos=-1)
 
 
 if __name__ == "__main__":
