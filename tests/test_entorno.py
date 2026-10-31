@@ -18,7 +18,6 @@ from mas.teams.loader import cargar_equipo
 
 RAIZ_PROYECTO = Path(__file__).resolve().parent.parent
 RUTA_LABORAL = RAIZ_PROYECTO / "equipos" / "laboral.yaml"
-RUTA_DEMO = RAIZ_PROYECTO / "equipos" / "demo.yaml"
 
 
 class TestMatrizDeAutorizacion(unittest.TestCase):
@@ -144,7 +143,7 @@ class TestMatrizDeAutorizacion(unittest.TestCase):
         self.assertIn("t", registradas[0])
 
     def test_sin_auditoria_no_escribe_nada(self):
-        sin_log = Entorno(cargar_equipo(RUTA_DEMO), raiz=self.raiz, auditoria=None)
+        sin_log = Entorno(cargar_equipo(RUTA_LABORAL), raiz=self.raiz, auditoria=None)
         sin_log.ejecutar("analista", "leer_archivo", {"ruta": "x"})
         self.assertFalse((self.raiz / "audit.jsonl").exists())
 
@@ -173,10 +172,27 @@ class TestCargaDeEquipos(unittest.TestCase):
         self.assertIsNone(equipo.herramientas_de("nadie"))  # agente inexistente
         self.assertIn("documentador", equipo.agentes)
 
-    def test_carga_el_equipo_demo(self):
-        equipo = cargar_equipo(RUTA_DEMO)
-        self.assertEqual(equipo.nombre, "demo")
+    def test_carga_un_equipo_minimo_valido(self):
+        ruta = self._yaml(
+            "equipo: minimo\n"
+            "descripcion: Equipo mínimo de prueba\n"
+            "orquestador: orquestador\n"
+            "agentes:\n"
+            "  - nombre: orquestador\n"
+            "    rol: Reparte la tarea\n"
+            "    herramientas: [leer_archivo]\n"
+            "  - nombre: programador\n"
+            "    rol: Escribe código\n"
+            "    herramientas: [leer_archivo, escribir_archivo]\n"
+        )
+        equipo = cargar_equipo(ruta)
+        self.assertEqual(equipo.nombre, "minimo")
         self.assertEqual(equipo.orquestador, "orquestador")
+        self.assertEqual(equipo.herramientas_de("orquestador"), ("leer_archivo",))
+        self.assertEqual(
+            equipo.herramientas_de("programador"), ("leer_archivo", "escribir_archivo")
+        )
+        self.assertIsNone(equipo.herramientas_de("nadie"))
 
     def test_falla_si_falta_una_clave_obligatoria(self):
         ruta = self._yaml("equipo: x\nagentes: []\n")
